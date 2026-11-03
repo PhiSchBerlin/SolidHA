@@ -78,6 +78,20 @@ class OpenAICompatible(LLM):
             raise _RateLimitError(
                 f"HTTP {resp.status_code}: rate limit or payment required"
             )
+        if resp.status_code == 404:
+            self._last_status = {
+                "provider": "compatible",
+                "model": self.model,
+                "level": _STATUS_ERROR,
+                "warning": (
+                    "HTTP 404: Not Found. Check your API key, base URL, "
+                    "and model name (e.g. 'nvidia/nemotron-3-super-120b-a12b')"
+                ),
+            }
+            raise RuntimeError(
+                "HTTP 404: Not Found. Check your API key, base URL, "
+                "and model name (e.g. 'nvidia/nemotron-3-super-120b-a12b')"
+            )
         resp.raise_for_status()
         data = resp.json()
 

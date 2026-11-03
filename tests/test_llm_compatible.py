@@ -29,13 +29,13 @@ def test_generate_returns_content(monkeypatch: pytest.MonkeyPatch) -> None:
     ) -> DummyResponse:
         assert url == "https://router.requesty.ai/v1/chat/completions"
         assert headers["Authorization"] == "Bearer test-key"
-        assert json["model"] == "nemotron-3-super-120b-a12b"
+        assert json["model"] == "nvidia/nemotron-3-super-120b-a12b"
         assert json["messages"][1]["content"] == "hi"
         return DummyResponse(payload)
 
     monkeypatch.setattr("agent.llm.compatible.requests.post", fake_post)
     llm = OpenAICompatible(
-        model="nemotron-3-super-120b-a12b",
+        model="nvidia/nemotron-3-super-120b-a12b",
         api_key="test-key",
         base_url="https://router.requesty.ai/v1",
     )
@@ -44,7 +44,7 @@ def test_generate_returns_content(monkeypatch: pytest.MonkeyPatch) -> None:
     status = llm.get_status()
     assert status["level"] == "ok"
     assert status["provider"] == "compatible"
-    assert status["model"] == "nemotron-3-super-120b-a12b"
+    assert status["model"] == "nvidia/nemotron-3-super-120b-a12b"
     assert status["warning"] == ""
 
 
@@ -59,7 +59,7 @@ def test_generate_rate_limit_429(monkeypatch: pytest.MonkeyPatch) -> None:
 
     monkeypatch.setattr("agent.llm.compatible.requests.post", fake_post)
     llm = OpenAICompatible(
-        model="nemotron-3-super-120b-a12b",
+        model="nvidia/nemotron-3-super-120b-a12b",
         api_key="test-key",
         base_url="https://router.requesty.ai/v1",
     )
@@ -81,7 +81,7 @@ def test_generate_payment_required_402(monkeypatch: pytest.MonkeyPatch) -> None:
 
     monkeypatch.setattr("agent.llm.compatible.requests.post", fake_post)
     llm = OpenAICompatible(
-        model="nemotron-3-super-120b-a12b",
+        model="nvidia/nemotron-3-super-120b-a12b",
         api_key="test-key",
         base_url="https://router.requesty.ai/v1",
     )
@@ -102,7 +102,7 @@ def test_generate_no_content(monkeypatch: pytest.MonkeyPatch) -> None:
 
     monkeypatch.setattr("agent.llm.compatible.requests.post", fake_post)
     llm = OpenAICompatible(
-        model="nemotron-3-super-120b-a12b",
+        model="nvidia/nemotron-3-super-120b-a12b",
         api_key="test-key",
         base_url="https://router.requesty.ai/v1",
     )
@@ -115,7 +115,7 @@ def test_generate_no_content(monkeypatch: pytest.MonkeyPatch) -> None:
 def test_requires_api_key(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.delenv("LLM_API_KEY", raising=False)
     with pytest.raises(RuntimeError):
-        OpenAICompatible(model="nemotron-3-super-120b-a12b")
+        OpenAICompatible(model="nvidia/nemotron-3-super-120b-a12b")
 
 
 def test_uses_env_api_key(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -131,7 +131,7 @@ def test_uses_env_api_key(monkeypatch: pytest.MonkeyPatch) -> None:
         return DummyResponse({"choices": [{"message": {"content": "ok"}}]})
 
     monkeypatch.setattr("agent.llm.compatible.requests.post", fake_post)
-    llm = OpenAICompatible(model="nemotron-3-super-120b-a12b")
+    llm = OpenAICompatible(model="nvidia/nemotron-3-super-120b-a12b")
     assert llm.generate("hi", timeout=1) == "ok"
 
 

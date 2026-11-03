@@ -67,7 +67,7 @@ def create_llm() -> LLM:
             return OpenAI()
         if provider in ("requesty", "compatible"):
             return OpenAICompatible(
-                model=os.getenv("LLM_MODEL", "nemotron-3-super-120b-a12b"),
+                model=os.getenv("LLM_MODEL", "nvidia/nemotron-3-super-120b-a12b"),
                 api_key=os.getenv("LLM_API_KEY"),
                 base_url=os.getenv("LLM_BASE_URL", "https://router.requesty.ai/v1"),
             )
@@ -83,7 +83,9 @@ def create_llm() -> LLM:
             return OpenAI()
         if backup_provider in ("requesty", "compatible"):
             return OpenAICompatible(
-                model=os.getenv("LLM_BACKUP_MODEL", "nemotron-3-super-120b-a12b"),
+                model=os.getenv(
+                    "LLM_BACKUP_MODEL", "nvidia/nemotron-3-super-120b-a12b"
+                ),
                 api_key=os.getenv("LLM_BACKUP_API_KEY"),
                 base_url=os.getenv(
                     "LLM_BACKUP_BASE_URL", "https://router.requesty.ai/v1"

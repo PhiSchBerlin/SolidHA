@@ -23,7 +23,7 @@ def test_create_llm_requesty_provider(monkeypatch: Any) -> None:
     monkeypatch.delenv("OPENAI_API_KEY", raising=False)
     llm = create_llm()
     assert isinstance(llm, OpenAICompatible)
-    assert llm.model == "nemotron-3-super-120b-a12b"
+    assert llm.model == "nvidia/nemotron-3-super-120b-a12b"
 
 
 def test_create_llm_compatible_provider(monkeypatch: Any) -> None:

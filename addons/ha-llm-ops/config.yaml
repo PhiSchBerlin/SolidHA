@@ -20,7 +20,7 @@ options:
   openai_api_key: ""
   llm_provider: openai
   llm_base_url: "https://router.requesty.ai/v1"
-  llm_model: nemotron-3-super-120b-a12b
+  llm_model: nvidia/nemotron-3-super-120b-a12b
   llm_api_key: ""
   llm_backup_provider: mock
   llm_backup_base_url: ""
