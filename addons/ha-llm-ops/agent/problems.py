@@ -361,6 +361,7 @@ async def monitor(
     analysis_rate_seconds: float = 0.0,
     analysis_max_lines: int | None = None,
     batch_seconds: float = 1.0,
+    stop_event: asyncio.Event | None = None,
 ) -> None:
     """Observe events and analyze problems in a single loop."""
 
@@ -388,12 +389,18 @@ async def monitor(
     batcher = EventBatcher(batch_seconds, handler.handle)
 
     while True:
+        if stop_event is not None and stop_event.is_set():
+            logging.info("Stop event received, shutting down monitor")
+            return
         try:
             async with websockets.connect(url, **kwargs) as ws:
                 await _authenticate(ws, token)
                 await ws.send(json.dumps({"id": 1, "type": "subscribe_events"}))
                 await ws.send(json.dumps({"id": 2, "type": "supervisor/subscribe"}))
                 async for message in ws:
+                    if stop_event is not None and stop_event.is_set():
+                        logging.info("Stop event received during message processing")
+                        break
                     if handler.stop:
                         break
                     data = json.loads(message)
@@ -429,6 +436,9 @@ async def monitor(
         else:  # pragma: no cover - connection closed gracefully
             backoff = 1
         if handler.stop or limit == 0:
+            break
+        if stop_event is not None and stop_event.is_set():
+            logging.info("Stop event received, breaking out of reconnect loop")
             break
 
 

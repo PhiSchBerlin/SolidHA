@@ -5,6 +5,7 @@ from __future__ import annotations
 import asyncio
 import logging
 import os
+import signal
 from pathlib import Path
 
 from .devux import start_http_server
@@ -30,7 +31,17 @@ def main() -> None:
     )
     Path("/tmp/healthy").touch()
     llm = create_llm()
-    start_http_server(problem_dir, llm=llm)
+    server = start_http_server(problem_dir, llm=llm)
+
+    stop_event = asyncio.Event()
+
+    def _handle_signal() -> None:
+        logging.info("Received shutdown signal, stopping agent...")
+        stop_event.set()
+
+    loop = asyncio.get_event_loop()
+    for sig in (signal.SIGTERM, signal.SIGINT):
+        loop.add_signal_handler(sig, _handle_signal)
 
     async def _run() -> None:
         await monitor(
@@ -40,7 +51,9 @@ def main() -> None:
             llm=llm,
             analysis_rate_seconds=rate,
             analysis_max_lines=max_lines,
+            stop_event=stop_event,
         )
+        server.shutdown()
 
     asyncio.run(_run())
 
