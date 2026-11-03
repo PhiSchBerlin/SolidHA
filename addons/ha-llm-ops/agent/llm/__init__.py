@@ -70,6 +70,8 @@ def create_llm() -> LLM:
                 model=os.getenv("LLM_MODEL", "nvidia/nemotron-3-super-120b-a12b"),
                 api_key=os.getenv("LLM_API_KEY"),
                 base_url=os.getenv("LLM_BASE_URL", "https://router.requesty.ai/v1"),
+                http_referer=os.getenv("LLM_HTTP_REFERER"),
+                x_title=os.getenv("LLM_X_TITLE"),
             )
         if provider == "mock":
             return MockLLM()
@@ -90,6 +92,8 @@ def create_llm() -> LLM:
                 base_url=os.getenv(
                     "LLM_BACKUP_BASE_URL", "https://router.requesty.ai/v1"
                 ),
+                http_referer=os.getenv("LLM_BACKUP_HTTP_REFERER"),
+                x_title=os.getenv("LLM_BACKUP_X_TITLE"),
             )
         if backup_provider == "mock":
             return MockLLM()

@@ -32,6 +32,8 @@ class OpenAICompatible(LLM):
         api_key: str | None = None,
         base_url: str | None = None,
         timeout: float = 300.0,
+        http_referer: str | None = None,
+        x_title: str | None = None,
     ) -> None:
         self.api_key = api_key or os.getenv("LLM_API_KEY", "")
         if not self.api_key:
@@ -39,6 +41,8 @@ class OpenAICompatible(LLM):
         self.model = model
         self.base_url = (base_url or os.getenv("LLM_BASE_URL", "")).rstrip("/")
         self.timeout = timeout
+        self.http_referer = http_referer or os.getenv("LLM_HTTP_REFERER", "")
+        self.x_title = x_title or os.getenv("LLM_X_TITLE", "")
         self._last_status: dict[str, Any] = {
             "provider": "compatible",
             "model": self.model,
@@ -46,13 +50,21 @@ class OpenAICompatible(LLM):
             "warning": "",
         }
 
-    def generate(self, prompt: str, *, timeout: float | None = None) -> str:
-        """Return a chat-completion response for ``prompt``."""
-        url = f"{self.base_url}/chat/completions"
+    def _build_headers(self) -> dict[str, str]:
         headers = {
             "Authorization": f"Bearer {self.api_key}",
             "Content-Type": "application/json",
         }
+        if self.http_referer:
+            headers["HTTP-Referer"] = self.http_referer
+        if self.x_title:
+            headers["X-Title"] = self.x_title
+        return headers
+
+    def generate(self, prompt: str, *, timeout: float | None = None) -> str:
+        """Return a chat-completion response for ``prompt``."""
+        url = f"{self.base_url}/chat/completions"
+        headers = self._build_headers()
         system_prompt = "Respond with **only** valid JSON per schema below; no prose."
         payload: dict[str, Any] = {
             "model": self.model,
@@ -78,6 +90,20 @@ class OpenAICompatible(LLM):
             raise _RateLimitError(
                 f"HTTP {resp.status_code}: rate limit or payment required"
             )
+        if resp.status_code == 401:
+            self._last_status = {
+                "provider": "compatible",
+                "model": self.model,
+                "level": _STATUS_ERROR,
+                "warning": (
+                    "HTTP 401: Unauthorized. Check your LLM_API_KEY - it may be "
+                    "invalid or expired."
+                ),
+            }
+            raise RuntimeError(
+                "HTTP 401: Unauthorized. Check your LLM_API_KEY - it may be "
+                "invalid or expired."
+            )
         if resp.status_code == 404:
             self._last_status = {
                 "provider": "compatible",
@@ -85,12 +111,14 @@ class OpenAICompatible(LLM):
                 "level": _STATUS_ERROR,
                 "warning": (
                     "HTTP 404: Not Found. Check your API key, base URL, "
-                    "and model name (e.g. 'nvidia/nemotron-3-super-120b-a12b')"
+                    "and model name (e.g. 'nvidia/nemotron-3-super-120b-a12b'). "
+                    "Also ensure your API key has access to free models."
                 ),
             }
             raise RuntimeError(
                 "HTTP 404: Not Found. Check your API key, base URL, "
-                "and model name (e.g. 'nvidia/nemotron-3-super-120b-a12b')"
+                "and model name (e.g. 'nvidia/nemotron-3-super-120b-a12b'). "
+                "Also ensure your API key has access to free models."
             )
         resp.raise_for_status()
         data = resp.json()
@@ -116,6 +144,21 @@ class OpenAICompatible(LLM):
             "warning": "No text content in response",
         }
         raise RuntimeError("No text content in response")
+
+    def test_connection(self) -> tuple[bool, str]:
+        """Test the connection to the LLM provider.
+
+        Returns a tuple of (success, message).
+        """
+        try:
+            self.generate("Hello", timeout=10)
+            return True, "Connection successful"
+        except _RateLimitError as exc:
+            return False, str(exc)
+        except RuntimeError as exc:
+            return False, str(exc)
+        except Exception as exc:  # pragma: no cover - defensive
+            return False, f"Unexpected error: {exc}"
 
     def get_status(self) -> dict[str, Any]:
         """Return the last known provider status."""

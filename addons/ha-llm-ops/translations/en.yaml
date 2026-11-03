@@ -38,3 +38,9 @@ configuration:
   llm_backup_api_key:
     name: Backup LLM API key
     description: API key for the backup LLM provider
+  llm_http_referer:
+    name: LLM HTTP Referer
+    description: Optional HTTP Referer header for analytics (e.g. https://yourapp.com)
+  llm_x_title:
+    name: LLM X-Title
+    description: Optional X-Title header for analytics (e.g. My App)
