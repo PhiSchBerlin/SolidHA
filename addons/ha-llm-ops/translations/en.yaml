@@ -14,3 +14,27 @@ configuration:
   openai_api_key:
     name: OpenAI API key
     description: API key used for OpenAI analysis
+  llm_provider:
+    name: LLM provider
+    description: LLM provider to use (openai, requesty, compatible, mock)
+  llm_base_url:
+    name: LLM base URL
+    description: Base URL for the LLM API (e.g. https://router.requesty.ai/v1)
+  llm_model:
+    name: LLM model
+    description: Model name used by the LLM provider
+  llm_api_key:
+    name: LLM API key
+    description: API key for the LLM provider
+  llm_backup_provider:
+    name: Backup LLM provider
+    description: Backup LLM provider used when the primary is rate-limited
+  llm_backup_base_url:
+    name: Backup LLM base URL
+    description: Base URL for the backup LLM API
+  llm_backup_model:
+    name: Backup LLM model
+    description: Model name used by the backup LLM provider
+  llm_backup_api_key:
+    name: Backup LLM API key
+    description: API key for the backup LLM provider

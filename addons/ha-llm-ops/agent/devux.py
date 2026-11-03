@@ -239,8 +239,51 @@ def reanalyze_problem(
     return new_key
 
 
-def render_index(entries: list[tuple[str, str, int, str, str, bool]]) -> bytes:
-    """Render a simple HA-style page for problems with details links."""
+def render_index(
+    entries: list[tuple[str, str, int, str, str, bool]],
+    status: dict[str, Any] | None = None,
+) -> bytes:
+    """Render a simple HA-style page for problems with details links.
+
+    Args:
+        entries: List of (summary, trigger, occurrences, last_seen, key, ignored).
+        status: Optional LLM provider status dict for the banner.
+    """
+
+    banner_html = ""
+    if status is not None:
+        primary = status.get("primary", {})
+        backup = status.get("backup")
+        level = primary.get("level", "ok")
+        provider = primary.get("provider", "unknown")
+        model = primary.get("model", "unknown")
+        warning = primary.get("warning", "")
+
+        if level == "warning":
+            banner_css = "banner warning"
+            msg = f"LLM: {provider} / {model} — {warning}"
+        elif level == "error":
+            banner_css = "banner error"
+            msg = (
+                f"LLM: {provider} / {model} — Fehler, Backup wird verwendet"
+                if backup
+                else f"LLM: {provider} / {model} — Fehler"
+            )
+        else:
+            banner_css = "banner ok"
+            backup_info = (
+                f" (Backup: {backup.get('provider', '')}/{backup.get('model', '')})"
+                if backup
+                else ""
+            )
+            msg = f"LLM: {provider} / {model} — OK{backup_info}"
+
+        banner_html = (
+            f"<div class='{banner_css}'>"
+            f"<span class='dot'></span>"
+            f"{html.escape(msg)}"
+            f"</div>"
+        )
 
     items = "\n".join(
         (
@@ -256,7 +299,7 @@ def render_index(entries: list[tuple[str, str, int, str, str, bool]]) -> bytes:
         for desc, trigger, occ, last, name, ignored in entries
     )
     template = (TEMPLATE_DIR / "index.html").read_text(encoding="utf-8")
-    body = Template(template).safe_substitute(items=items)
+    body = Template(template).safe_substitute(status_banner=banner_html, items=items)
     return body.encode("utf-8")
 
 
@@ -341,7 +384,9 @@ def render_details(name: str, entry: _ProblemEntry) -> bytes:
     return body.encode("utf-8")
 
 
-def start_http_server(directory: Path, *, port: int = 8000) -> ThreadingHTTPServer:
+def start_http_server(
+    directory: Path, *, port: int = 8000, llm: LLM | None = None
+) -> ThreadingHTTPServer:
     """Start a thread-based HTTP server exposing problem bundles."""
 
     class Handler(BaseHTTPRequestHandler):
@@ -389,7 +434,8 @@ def start_http_server(directory: Path, *, port: int = 8000) -> ThreadingHTTPServ
                     for key, p in problems.items()
                 ]
                 entries.sort(key=lambda x: x[2], reverse=True)
-                body = render_index(entries)
+                status = llm.status() if llm is not None else None
+                body = render_index(entries, status=status)
                 self.send_response(200)
                 self.send_header("Content-Type", "text/html; charset=utf-8")
             elif path.startswith("/details/"):

@@ -44,4 +44,3 @@ def test_export_schema(tmp_path: Path) -> None:
     assert out.exists()
     # Ensure default path is also handled without writing
     export_schema()
-

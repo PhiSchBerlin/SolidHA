@@ -29,8 +29,8 @@ def main() -> None:
         ws_url,
     )
     Path("/tmp/healthy").touch()
-    start_http_server(problem_dir)
     llm = create_llm()
+    start_http_server(problem_dir, llm=llm)
 
     async def _run() -> None:
         await monitor(
